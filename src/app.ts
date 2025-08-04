@@ -51,8 +51,6 @@ app.get('/health', (req, res) => {
 // API Documentation
 app.use('/api-docs', swaggerUi.serve);
 app.get('/api-docs', swaggerUi.setup(swaggerSpec, {
-  // customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'Task Management API Documentation',
   swaggerOptions: {
     persistAuthorization: true,
     displayRequestDuration: true,
