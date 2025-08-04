@@ -7,14 +7,12 @@ import { swaggerSpec } from "./config/swagger";
 import { errorHandler, notFound } from './middleware/error-handler.middleware';
 import { generalLimiter, authLimiter } from './middleware/rate-limiter.middleware';
 
-// Route imports
 import authRoutes from './routes/auth.routes';
 import taskRoutes from './routes/tasks.routes';
 import analyticsRoutes from './routes/analytics.routes';
 
 const app = express();
 
-// Security middleware
 app.use(
   cors({
     origin: true,
@@ -31,15 +29,12 @@ app.use(
   })
 );
 
-// Rate limiting
 app.use(generalLimiter);
 app.use('/api/auth', authLimiter);
 
-// Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Health check
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'OK', 
@@ -49,7 +44,6 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API Documentation
 app.use('/api-docs', swaggerUi.serve);
 app.get('/api-docs', swaggerUi.setup(swaggerSpec, {
   swaggerOptions: {
