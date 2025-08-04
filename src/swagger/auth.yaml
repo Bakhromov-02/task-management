@@ -356,3 +356,145 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/users:
+    get:
+      tags: [Authentication]
+      summary: Get all users (Admin only)
+      description: |
+        Retrieve a paginated list of all users with optional filtering and search capabilities.
+        Only admin users can access this endpoint.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number for pagination
+          example: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+          description: Number of users per page
+          example: 10
+        - name: email
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Search users by email (case-insensitive partial match)
+          example: "john"
+        - name: role
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [user, admin]
+          description: Filter users by role
+          example: "user"
+      responses:
+        "200":
+          description: Users retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PaginatedResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/User"
+              examples:
+                users_list:
+                  summary: Users list with pagination
+                  value:
+                    success: true
+                    message: "Users retrieved successfully"
+                    data:
+                      - id: "507f1f77bcf86cd799439011"
+                        email: "user1@example.com"
+                        role: "user"
+                        createdAt: "2025-08-04T12:00:00.000Z"
+                      - id: "507f1f77bcf86cd799439012"
+                        email: "admin@example.com"
+                        role: "admin"
+                        createdAt: "2025-08-03T10:30:00.000Z"
+                    pagination:
+                      page: 1
+                      limit: 10
+                      total: 25
+                      pages: 3
+                filtered_search:
+                  summary: Filtered search results
+                  value:
+                    success: true
+                    message: "Users retrieved successfully"
+                    data:
+                      - id: "507f1f77bcf86cd799439013"
+                        email: "john.doe@example.com"
+                        role: "user"
+                        createdAt: "2025-08-02T14:20:00.000Z"
+                      - id: "507f1f77bcf86cd799439014"
+                        email: "john.admin@example.com"
+                        role: "admin"
+                        createdAt: "2025-08-01T09:15:00.000Z"
+                    pagination:
+                      page: 1
+                      limit: 10
+                      total: 2
+                      pages: 1
+        "400":
+          $ref: "#/components/responses/ValidationError"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                invalid_role:
+                  summary: Invalid role filter
+                  value:
+                    success: false
+                    message: "Invalid role filter"
+                invalid_pagination:
+                  summary: Invalid pagination parameters
+                  value:
+                    success: false
+                    message: "Invalid pagination parameters"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                message: "Access denied. No token provided."
+        "403":
+          $ref: "#/components/responses/Forbidden"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                message: "Only admins can access user list"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                message: "Failed to retrieve users"

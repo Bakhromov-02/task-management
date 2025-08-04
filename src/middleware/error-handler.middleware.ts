@@ -14,22 +14,18 @@ export const errorHandler = (
   let error = { ...err };
   error.message = err.message;
 
-  // Log error
   logger.error(err.message, err);
 
-  // Mongoose bad ObjectId
   if (err.name === "CastError") {
     const message = "Resource not found";
     error = { name: "CastError", message, statusCode: 404 } as ApiError;
   }
 
-  // Mongoose duplicate key
   if (err.name === "MongoServerError" && (err as any).code === 11000) {
     const message = "Duplicate field value entered";
     error = { name: "MongoServerError", message, statusCode: 400 } as ApiError;
   }
 
-  // Mongoose validation error
   if (err.name === "ValidationError") {
     const message = Object.values((err as any).errors)
       .map((val: any) => val.message)

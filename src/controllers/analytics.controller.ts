@@ -6,10 +6,6 @@ import { AuthRequest, TaskStatus } from "../types";
 
 export const getTaskAnalytics = async (req: AuthRequest, res: Response) => {
   try {
-    if (!req.user || req.user.role !== "admin") {
-      return ResponseHandler.forbidden(res, "Admin access required");
-    }
-
     const [analytics, totalUsers] = await Promise.all([
       Task.aggregate([
         {

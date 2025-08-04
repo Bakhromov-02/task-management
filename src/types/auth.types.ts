@@ -3,6 +3,7 @@ import { Request } from 'express';
 import { IUser } from '../models';
 
 import { UserRole } from './user.types';
+import { PaginationQuery } from './pagination';
 
 export interface AuthRequest extends Request {
   user?: IUser;
@@ -16,9 +17,12 @@ export interface LoginRequest {
 export interface RegisterRequest {
   email: string;
   password: string;
-  // role?: UserRole;
 }
 
 export interface CreateAdminRequest extends RegisterRequest {
   role?: UserRole.admin;
+}
+export interface UserQuery extends PaginationQuery {
+  email?: string;
+  role?: UserRole;
 }

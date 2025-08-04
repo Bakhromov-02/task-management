@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 
 import { User } from "../models";
 import { jwtService, ResponseHandler } from '../utils';
-import { LoginRequest, RegisterRequest, UserRole } from "../types";
+import { LoginRequest, RegisterRequest, UserQuery, UserRole } from "../types";
 
 export const register = async (req: Request<{}, {}, RegisterRequest>, res: Response): Promise<void> => {
   try {
@@ -141,3 +141,48 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
   }
 };
 
+export const getAllUsers = async (
+  req: Request<{}, {}, {}, UserQuery>,
+  res: Response
+): Promise<void> => {
+  try {
+    const page = parseInt(req.query.page || "1", 10);
+    const limit = parseInt(req.query.limit || "10", 10);
+    const { email, role } = req.query;
+
+    const query: any = {};
+
+    if (email) {
+      query.email = { $regex: email, $options: "i" };
+    }
+    
+    if (role) {
+      query.role = role;
+    }
+
+    const users = await User.find(query)
+      .select('-password')
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .skip((page - 1) * limit);
+
+    const total = await User.countDocuments(query);
+
+    ResponseHandler.paginated(
+      res,
+      "Users retrieved successfully",
+      users.map(user => ({
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        createdAt: user.createdAt,
+      })),
+      page,
+      limit,
+      total
+    );
+  } catch (error) {
+    console.error("Get all users error:", error);
+    ResponseHandler.error(res, "Failed to retrieve users");
+  }
+}

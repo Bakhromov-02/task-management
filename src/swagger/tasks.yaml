@@ -137,12 +137,12 @@ paths:
             type: string
           description: Search in task title and description
           example: "documentation"
-        - in: path
-          name: id
+        - in: query
+          name: userId
           schema:
             type: string
             pattern: "^[0-9a-fA-F]{24}$"
-          description: MongoDB ObjectId of the task
+          description: MongoDB ObjectId of the user to filter tasks by user
           example: "507f1f77bcf86cd799439011"
       responses:
         "200":
