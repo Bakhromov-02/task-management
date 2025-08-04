@@ -19,9 +19,14 @@ jobs:
         host: ${{ secrets.EC2_HOST }}
         username: ${{ secrets.EC2_USER }}
         key: ${{ secrets.EC2_SSH_KEY }}
-        script: |
+        script:  |
           cd ${{ secrets.EC2_APP_DIR }}
+          echo "Pulling latest code..."
           git pull origin main
+          echo "Installing dependencies..."
           npm install --omit=dev
+          echo "Building project..."
           npm run build
+          echo "Restarting PM2 app..."
           pm2 restart task-management-app || pm2 start dist/server.js --name task-management-app
+          echo "Deployment finished."
