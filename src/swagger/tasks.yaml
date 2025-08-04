@@ -1,0 +1,616 @@
+tags:
+  - name: Tasks
+    description: Task management operations
+
+paths:
+  /tasks:
+    post:
+      tags: [Tasks]
+      summary: Create a new task
+      description: Create a new task for the authenticated user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                  description: Task title
+                  example: "Complete project documentation"
+                description:
+                  type: string
+                  maxLength: 500
+                  description: Detailed task description
+                  example: "Write comprehensive API documentation with examples"
+                priority:
+                  type: string
+                  enum: [low, medium, high]
+                  default: medium
+                  description: Task priority level
+                  example: "high"
+            examples:
+              basic_task:
+                summary: Basic task
+                value:
+                  title: "Fix bug in user authentication"
+                  priority: "high"
+              detailed_task:
+                summary: Detailed task
+                value:
+                  title: "Implement user dashboard"
+                  description: "Create a comprehensive dashboard showing user statistics and recent activities"
+                  priority: "medium"
+      responses:
+        "201":
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Task created successfully"
+                  data:
+                    type: object
+                    properties:
+                      task:
+                        $ref: "#/components/schemas/Task"
+              example:
+                success: true
+                message: "Task created successfully"
+                data:
+                  task:
+                    id: "507f1f77bcf86cd799439014"
+                    title: "Complete project documentation"
+                    description: "Write comprehensive API documentation with examples"
+                    status: "pending"
+                    priority: "high"
+                    userId: "507f1f77bcf86cd799439012"
+                    createdAt: "2025-08-04T10:30:00Z"
+                    completedAt: null
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    get:
+      tags: [Tasks]
+      summary: Get all tasks with pagination and filters
+      description: |
+        Retrieve tasks with optional filtering and pagination.
+        - Regular users see only their own tasks
+        - Admins see all tasks from all users
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number for pagination
+          example: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+          description: Number of tasks per page
+          example: 10
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, completed]
+          description: Filter tasks by status
+          example: pending
+        - in: query
+          name: priority
+          schema:
+            type: string
+            enum: [low, medium, high]
+          description: Filter tasks by priority level
+          example: high
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Search in task title and description
+          example: "documentation"
+        - in: path
+          name: id
+          schema:
+            type: string
+            pattern: "^[0-9a-fA-F]{24}$"
+          description: MongoDB ObjectId of the task
+          example: "507f1f77bcf86cd799439011"
+      responses:
+        "200":
+          description: Tasks retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Tasks retrieved successfully"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Task"
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                        example: 1
+                      limit:
+                        type: integer
+                        example: 10
+                      total:
+                        type: integer
+                        example: 25
+                      totalPages:
+                        type: integer
+                        example: 3
+              example:
+                success: true
+                message: "Tasks retrieved successfully"
+                data:
+                  - id: "507f1f77bcf86cd799439011"
+                    title: "Complete project documentation"
+                    description: "Write comprehensive API documentation"
+                    status: "pending"
+                    priority: "high"
+                    userId: "507f1f77bcf86cd799439012"
+                    createdAt: "2025-08-04T10:30:00Z"
+                    completedAt: null
+                  - id: "507f1f77bcf86cd799439013"
+                    title: "Review code changes"
+                    description: "Review pull request #123"
+                    status: "completed"
+                    priority: "medium"
+                    userId: "507f1f77bcf86cd799439012"
+                    createdAt: "2025-08-03T14:20:00Z"
+                    completedAt: "2025-08-04T09:15:00Z"
+                pagination:
+                  page: 1
+                  limit: 10
+                  total: 25
+                  totalPages: 3
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /tasks/{id}:
+    get:
+      tags: [Tasks]
+      summary: Get task by ID
+      description: |
+        Retrieve a specific task by its ID.
+        - Regular users can only access their own tasks
+        - Admins can access any task
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            pattern: "^[0-9a-fA-F]{24}$"
+          description: MongoDB ObjectId of the task
+          example: "507f1f77bcf86cd799439011"
+      responses:
+        "200":
+          description: Task retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Task retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      task:
+                        allOf:
+                          - $ref: "#/components/schemas/Task"
+                          - type: object
+                            properties:
+                              userId:
+                                type: object
+                                properties:
+                                  email:
+                                    type: string
+                                    example: "user@example.com"
+                                  role:
+                                    type: string
+                                    example: "user"
+              example:
+                success: true
+                message: "Task retrieved successfully"
+                data:
+                  task:
+                    id: "507f1f77bcf86cd799439011"
+                    title: "Complete project documentation"
+                    description: "Write comprehensive API documentation"
+                    status: "pending"
+                    priority: "high"
+                    userId:
+                      email: "user@example.com"
+                      role: "user"
+                    createdAt: "2025-08-04T10:30:00Z"
+                    completedAt: null
+        "400":
+          description: Invalid task ID format
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                message: "Invalid task ID format"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    patch:
+      tags: [Tasks]
+      summary: Update task
+      description: |
+        Update an existing task. Only the task owner or admins can update tasks.
+        You can update any combination of title, description, priority, and status.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            pattern: "^[0-9a-fA-F]{24}$"
+          description: MongoDB ObjectId of the task to update
+          example: "507f1f77bcf86cd799439011"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                  description: Updated task title
+                  example: "Complete project documentation - Updated"
+                description:
+                  type: string
+                  maxLength: 500
+                  description: Updated task description
+                  example: "Write comprehensive API documentation with examples and testing guides"
+                priority:
+                  type: string
+                  enum: [low, medium, high]
+                  description: Updated task priority
+                  example: "medium"
+                status:
+                  type: string
+                  enum: [pending, completed]
+                  description: Updated task status
+                  example: "completed"
+            examples:
+              complete_update:
+                summary: Update all fields
+                value:
+                  title: "Finalize project documentation"
+                  description: "Complete all API documentation including examples, testing guides, and deployment instructions"
+                  priority: "high"
+                  status: "completed"
+      responses:
+        "200":
+          description: Task updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Task updated successfully"
+                  data:
+                    type: object
+                    properties:
+                      task:
+                        allOf:
+                          - $ref: "#/components/schemas/Task"
+                          - type: object
+                            properties:
+                              userId:
+                                type: object
+                                properties:
+                                  email:
+                                    type: string
+                                  role:
+                                    type: string
+              example:
+                success: true
+                message: "Task updated successfully"
+                data:
+                  task:
+                    id: "507f1f77bcf86cd799439011"
+                    title: "Complete project documentation - Updated"
+                    description: "Write comprehensive API documentation with examples and testing guides"
+                    status: "completed"
+                    priority: "medium"
+                    userId:
+                      email: "user@example.com"
+                      role: "user"
+                    createdAt: "2025-08-04T10:30:00Z"
+                    completedAt: "2025-08-04T15:45:00Z"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Task not found or access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                message: "Task not found or access denied"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      tags: [Tasks]
+      summary: Delete task
+      description: |
+        Delete a task permanently. Only the task owner or admins can delete tasks.
+        This action cannot be undone.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            pattern: "^[0-9a-fA-F]{24}$"
+          description: MongoDB ObjectId of the task to delete
+          example: "507f1f77bcf86cd799439011"
+      responses:
+        "200":
+          description: Task deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Task deleted successfully"
+              example:
+                success: true
+                message: "Task deleted successfully"
+        "400":
+          description: Invalid task ID format
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                message: "Invalid task ID format"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Task not found or access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                message: "Task not found or access denied"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique task identifier
+          example: "507f1f77bcf86cd799439011"
+        title:
+          type: string
+          description: Task title
+          example: "Complete project documentation"
+        description:
+          type: string
+          description: Detailed task description
+          example: "Write comprehensive API documentation with examples"
+          nullable: true
+        status:
+          type: string
+          enum: [pending, completed]
+          description: Current task status
+          example: "pending"
+        priority:
+          type: string
+          enum: [low, medium, high]
+          description: Task priority level
+          example: "high"
+        userId:
+          type: string
+          description: ID of the user who owns this task
+          example: "507f1f77bcf86cd799439012"
+        createdAt:
+          type: string
+          format: date-time
+          description: Task creation timestamp
+          example: "2025-08-04T10:30:00Z"
+        completedAt:
+          type: string
+          format: date-time
+          description: Task completion timestamp
+          example: "2025-08-04T15:45:00Z"
+          nullable: true
+      required:
+        - id
+        - title
+        - status
+        - priority
+        - userId
+        - createdAt
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "Error message describing what went wrong"
+        error:
+          type: string
+          example: "ERROR_CODE"
+          description: Optional error code for programmatic handling
+      required:
+        - success
+        - message
+
+  responses:
+    Unauthorized:
+      description: Authentication required or token invalid
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          examples:
+            no_token:
+              summary: No token provided
+              value:
+                success: false
+                message: "Access denied. No token provided."
+                error: "NO_TOKEN"
+            invalid_token:
+              summary: Invalid token
+              value:
+                success: false
+                message: "Invalid token provided."
+                error: "INVALID_TOKEN"
+            expired_token:
+              summary: Token expired
+              value:
+                success: false
+                message: "Token has expired. Please login again."
+                error: "TOKEN_EXPIRED"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            success: false
+            message: "Task not found"
+
+    ValidationError:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/ErrorResponse"
+              - type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                          example: "title"
+                        message:
+                          type: string
+                          example: "Task title is required"
+          example:
+            success: false
+            message: "Validation failed"
+            errors:
+              - field: "title"
+                message: "Task title is required"
+              - field: "priority"
+                message: "Priority must be low, medium, or high"
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "Enter your JWT token in the format: Bearer <token>"

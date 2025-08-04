@@ -1,0 +1,358 @@
+tags:
+  - name: Authentication
+    description: User authentication and authorization
+
+paths:
+  /auth/register/admin:
+    post:
+      tags: [Authentication]
+      summary: Register a new user or admin (Admin only)
+      description: |
+        Create a new user or admin account. This endpoint requires admin authentication.
+        Only existing admins can create new admin accounts.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: User's email address
+                  example: "admin@example.com"
+                password:
+                  type: string
+                  minLength: 6
+                  description: User's password (minimum 6 characters)
+                  example: "password123"
+            examples:
+              create_user_default:
+                summary: Create user with default role
+                value:
+                  email: "user@example.com"
+                  password: "password123"
+      responses:
+        "201":
+          description: User/Admin registered successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          token:
+                            type: string
+                            description: JWT authentication token
+                            example: "eyJhbGciOiJIUzI1NiIs..."
+                          user:
+                            $ref: "#/components/schemas/User"
+              examples:
+                admin_created:
+                  summary: Admin user created
+                  value:
+                    success: true
+                    message: "User registered successfully"
+                    data:
+                      user:
+                        id: "507f1f77bcf86cd799439012"
+                        email: "admin@example.com"
+                        role: "admin"
+                        createdAt: "2025-08-04T12:00:00.000Z"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                message: "Admin access required"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/register:
+    post:
+      tags: [Authentication]
+      summary: Register a new user (Public)
+      description: |
+        Create a new user account with email and password. 
+        This endpoint only creates regular users. To create admin users, use the admin registration endpoint.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: User's email address
+                  example: "user@example.com"
+                password:
+                  type: string
+                  minLength: 6
+                  description: User's password (minimum 6 characters)
+                  example: "password123"
+            examples:
+              user_registration:
+                summary: Standard user registration
+                value:
+                  email: "user@example.com"
+                  password: "password123"
+      responses:
+        "201":
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          token:
+                            type: string
+                            description: JWT authentication token
+                            example: "eyJhbGciOiJIUzI1NiIs..."
+                          user:
+                            allOf:
+                              - $ref: "#/components/schemas/User"
+                              - type: object
+                                properties:
+                                  role:
+                                    type: string
+                                    enum: [user]
+                                    description: Always 'user' for public registration
+                                    example: "user"
+              example:
+                success: true
+                message: "User registered successfully"
+                data:
+                  token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  user:
+                    id: "507f1f77bcf86cd799439011"
+                    email: "user@example.com"
+                    role: "user"
+                    createdAt: "2025-08-04T12:00:00.000Z"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                validation_error:
+                  summary: Validation failed
+                  value:
+                    success: false
+                    message: "Validation failed"
+                    errors:
+                      - field: "email"
+                        message: "Please provide a valid email"
+                user_exists:
+                  summary: User already exists
+                  value:
+                    success: false
+                    message: "User already exists with this email"
+                role_not_allowed:
+                  summary: Role specification not allowed
+                  value:
+                    success: false
+                    message: "Cannot specify role in public registration. Use admin registration endpoint for admin users."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                message: "Registration failed"
+
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: Login user
+      description: Authenticate user with email and password. Works for both regular users and admins.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: User's email address
+                  example: "user@example.com"
+                password:
+                  type: string
+                  description: User's password
+                  example: "password123"
+            examples:
+              user_login:
+                summary: Regular user login
+                value:
+                  email: "user@example.com"
+                  password: "password123"
+              admin_login:
+                summary: Admin user login
+                value:
+                  email: "admin@example.com"
+                  password: "adminpassword"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          token:
+                            type: string
+                            description: JWT authentication token
+                            example: "eyJhbGciOiJIUzI1NiIs..."
+                          user:
+                            $ref: "#/components/schemas/User"
+              examples:
+                user_login_success:
+                  summary: User login successful
+                  value:
+                    success: true
+                    message: "Login successful"
+                    data:
+                      token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                      user:
+                        id: "507f1f77bcf86cd799439011"
+                        email: "user@example.com"
+                        role: "user"
+                admin_login_success:
+                  summary: Admin login successful
+                  value:
+                    success: true
+                    message: "Login successful"
+                    data:
+                      token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                      user:
+                        id: "507f1f77bcf86cd799439012"
+                        email: "admin@example.com"
+                        role: "admin"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                message: "Invalid credentials"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/profile:
+    get:
+      tags: [Authentication]
+      summary: Get user profile
+      description: Retrieve the current authenticated user's profile information
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          user:
+                            $ref: "#/components/schemas/User"
+              examples:
+                user_profile:
+                  summary: Regular user profile
+                  value:
+                    success: true
+                    message: "Profile retrieved successfully"
+                    data:
+                      user:
+                        id: "507f1f77bcf86cd799439011"
+                        email: "user@example.com"
+                        role: "user"
+                        createdAt: "2025-08-04T12:00:00.000Z"
+                admin_profile:
+                  summary: Admin user profile
+                  value:
+                    success: true
+                    message: "Profile retrieved successfully"
+                    data:
+                      user:
+                        id: "507f1f77bcf86cd799439012"
+                        email: "admin@example.com"
+                        role: "admin"
+                        createdAt: "2025-08-04T12:00:00.000Z"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                no_token:
+                  summary: No token provided
+                  value:
+                    success: false
+                    message: "Access denied. No token provided."
+                invalid_token:
+                  summary: Invalid token
+                  value:
+                    success: false
+                    message: "Invalid token provided."
+                user_not_found:
+                  summary: User not found
+                  value:
+                    success: false
+                    message: "User not found"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"

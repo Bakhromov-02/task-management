@@ -1,0 +1,283 @@
+tags:
+  - name: Analytics
+    description: Task analytics and statistics
+
+paths:
+  /analytics:
+    get:
+      tags: [Analytics]
+      summary: Get comprehensive task analytics (Admin only)
+      description: |
+        Provides detailed analytics including:
+        - Task summary statistics with completion rates
+        - Task distribution by priority and status
+        - Per-user task statistics with completion rates
+        - Recent activity over the last 30 days
+        - Top performing users (minimum 3 tasks)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Analytics data retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          summary:
+                            type: object
+                            description: Overall task statistics
+                            properties:
+                              totalTasks:
+                                type: number
+                                description: Total number of tasks in the system
+                                example: 150
+                              completedTasks:
+                                type: number
+                                description: Number of completed tasks
+                                example: 75
+                              pendingTasks:
+                                type: number
+                                description: Number of pending tasks
+                                example: 75
+                              totalUsers:
+                                type: number
+                                description: Total number of users
+                                example: 25
+                              completionRate:
+                                type: number
+                                format: float
+                                description: Overall task completion rate as percentage
+                                example: 50.0
+                          tasksByPriority:
+                            type: array
+                            description: Task distribution by priority level
+                            items:
+                              type: object
+                              properties:
+                                _id:
+                                  type: string
+                                  enum: [low, medium, high]
+                                  description: Priority level
+                                  example: "high"
+                                count:
+                                  type: number
+                                  description: Number of tasks with this priority
+                                  example: 45
+                          tasksByStatus:
+                            type: array
+                            description: Task distribution by status
+                            items:
+                              type: object
+                              properties:
+                                _id:
+                                  type: string
+                                  enum: [pending, completed]
+                                  description: Task status
+                                  example: "completed"
+                                count:
+                                  type: number
+                                  description: Number of tasks with this status
+                                  example: 75
+                          tasksPerUser:
+                            type: array
+                            description: Task statistics per user, sorted by total tasks descending
+                            items:
+                              type: object
+                              properties:
+                                _id:
+                                  type: string
+                                  description: User ID
+                                  example: "507f1f77bcf86cd799439011"
+                                email:
+                                  type: string
+                                  format: email
+                                  description: User's email address
+                                  example: "user@example.com"
+                                role:
+                                  type: string
+                                  enum: [user, admin]
+                                  description: User's role
+                                  example: "user"
+                                totalTasks:
+                                  type: number
+                                  description: Total tasks created by this user
+                                  example: 12
+                                completedTasks:
+                                  type: number
+                                  description: Tasks completed by this user
+                                  example: 8
+                                completionRate:
+                                  type: number
+                                  format: float
+                                  description: User's task completion rate as percentage
+                                  example: 66.67
+                          recentActivity:
+                            type: array
+                            description: Daily task creation activity over the last 30 days
+                            items:
+                              type: object
+                              properties:
+                                _id:
+                                  type: string
+                                  format: date
+                                  description: Date in YYYY-MM-DD format
+                                  example: "2025-08-04"
+                                tasksCreated:
+                                  type: number
+                                  description: Number of tasks created on this date
+                                  example: 5
+                          topPerformers:
+                            type: array
+                            description: Top 10 users by completion rate (minimum 3 tasks)
+                            items:
+                              type: object
+                              properties:
+                                _id:
+                                  type: string
+                                  description: User ID
+                                  example: "507f1f77bcf86cd799439012"
+                                email:
+                                  type: string
+                                  format: email
+                                  description: User's email address
+                                  example: "topuser@example.com"
+                                totalTasks:
+                                  type: number
+                                  description: Total tasks created by this user
+                                  example: 15
+                                completedTasks:
+                                  type: number
+                                  description: Tasks completed by this user
+                                  example: 14
+                                completionRate:
+                                  type: number
+                                  format: float
+                                  description: User's completion rate as percentage
+                                  example: 93.33
+              example:
+                success: true
+                message: "Analytics retrieved successfully"
+                data:
+                  summary:
+                    totalTasks: 150
+                    completedTasks: 75
+                    pendingTasks: 75
+                    totalUsers: 25
+                    completionRate: 50.0
+                  tasksByPriority:
+                    - _id: "high"
+                      count: 45
+                    - _id: "medium"
+                      count: 60
+                    - _id: "low"
+                      count: 45
+                  tasksByStatus:
+                    - _id: "completed"
+                      count: 75
+                    - _id: "pending"
+                      count: 75
+                  tasksPerUser:
+                    - _id: "507f1f77bcf86cd799439011"
+                      email: "user1@example.com"
+                      role: "user"
+                      totalTasks: 15
+                      completedTasks: 12
+                      completionRate: 80.0
+                    - _id: "507f1f77bcf86cd799439012"
+                      email: "user2@example.com"
+                      role: "user"
+                      totalTasks: 12
+                      completedTasks: 8
+                      completionRate: 66.67
+                    - _id: "507f1f77bcf86cd799439013"
+                      email: "user3@example.com"
+                      role: "user"
+                      totalTasks: 10
+                      completedTasks: 5
+                      completionRate: 50.0
+                  recentActivity:
+                    - _id: "2025-08-01"
+                      tasksCreated: 3
+                    - _id: "2025-08-02"
+                      tasksCreated: 5
+                    - _id: "2025-08-03"
+                      tasksCreated: 2
+                    - _id: "2025-08-04"
+                      tasksCreated: 4
+                  topPerformers:
+                    - _id: "507f1f77bcf86cd799439014"
+                      email: "superuser@example.com"
+                      totalTasks: 20
+                      completedTasks: 19
+                      completionRate: 95.0
+                    - _id: "507f1f77bcf86cd799439015"
+                      email: "gooduser@example.com"
+                      totalTasks: 15
+                      completedTasks: 13
+                      completionRate: 86.67
+                    - _id: "507f1f77bcf86cd799439011"
+                      email: "user1@example.com"
+                      totalTasks: 15
+                      completedTasks: 12
+                      completionRate: 80.0
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Admin access required"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Failed to retrieve analytics"
+  
+  /analytics/user-stats:
+    get:
+      tags: [Analytics]
+      summary: Get current user's task statistics
+      description: Returns detailed statistics for the authenticated user's tasks
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          stats:
+                            type: object
+                            properties:
+                              totalTasks:
+                                    type: number
+                                    example: 12
+                              completedTasks:
+                                    type: number
+                                    example: 8
+                              completionRate:
+                                    type: number
+                                    example: 66.67
+        '401':
+          $ref: '#/components/responses/Unauthorized'
