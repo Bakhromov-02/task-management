@@ -6,7 +6,7 @@ paths:
   /auth/register/admin:
     post:
       tags: [Authentication]
-      summary: Register a new user or admin (Admin only)
+      summary: Register a new admin (Admin only)
       description: |
         Create a new user or admin account. This endpoint requires admin authentication.
         Only existing admins can create new admin accounts.
