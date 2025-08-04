@@ -40,7 +40,6 @@ app.get('/health', (req, res) => {
     status: 'OK', 
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    test: "CI/CD pipeline test",
   });
 });
 
